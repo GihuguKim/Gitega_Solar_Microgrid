@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gitega_Solar_Micro-Grid</title>
+    <style>
+        :root {
+            --bg-color: #030712;
+            --panel-bg: rgba(17, 24, 39, 0.9);
+            --panel-border: #1f2937;
+            --text-primary: #f9fafb;
+            --text-secondary: #9ca3af;
+            --accent-amber: #f59e0b;
+            --accent-cyan: #06b6d4;
+            --accent-emerald: #10b981;
+            --accent-crimson: #ef4444;
+            --accent-indigo: #6366f1;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 1.25rem;
+            gap: 1.25rem;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--panel-bg);
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            border: 1px solid var(--panel-border);
+        }
+
+        .header-title h1 {
+            font-size: 1.25rem;
+            letter-spacing: 0.05em;
+            color: var(--accent-amber);
+            text-transform: uppercase;
+        }
+
+        .header-title p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-top: 0.2rem;
+        }
+
+        .sys-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid var(--accent-amber);
+            color: var(--accent-amber);
+        }
+
+        .sys-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: currentColor;
+        }
+
+        /* KPI TELEMETRY CARDS */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1rem;
+        }
+
+        .kpi-card {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 8px;
+            padding: 1rem 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+        }
+
+        .kpi-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            letter-spacing: 0.05em;
+        }
+
+        .kpi-value {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .kpi-subtext {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .kpi-card.amber .kpi-value { color: var(--accent-amber); }
+        .kpi-card.cyan .kpi-value { color: var(--accent-cyan); }
+        .kpi-card.emerald .kpi-value { color: var(--accent-emerald); }
+        .kpi-card.crimson .kpi-value { color: var(--accent-crimson); }
+
+        .progress-bar-bg {
+            width: 100%;
+            height: 8px;
+            background: #111827;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 0.4rem;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            width: 100%;
+            background: var(--accent-emerald);
+            transition: width 0.3s, background-color 0.3s;
+        }
+
+        main {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.25rem;
+        }
+
+        @media (min-width: 1100px) {
+            main {
+                grid-template-columns: 1.3fr 1fr;
+            }
+        }
+
+        .panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 8px;
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .panel-header {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--accent-amber);
+            border-bottom: 1px solid var(--panel-border);
+            padding-bottom: 0.5rem;
+            font-weight: 700;
+        }
+
+        #chart-container {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            background: #030712;
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid #111827;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .controls-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .control-group.full-width {
+            grid-column: span 2;
+        }
+
+        label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            accent-color: var(--accent-amber);
+        }
+
+        input[type="text"], input[type="number"], select {
+            background: #060911;
+            border: 1px solid var(--panel-border);
+            border-radius: 4px;
+            padding: 0.5rem 0.75rem;
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            outline: none;
+        }
+
+        input:focus, select:focus {
+            border-color: var(--accent-amber);
+        }
+
+        .tier-toggles {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .tier-pill {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 0.8rem;
+            padding: 0.4rem 0.75rem;
+            border-radius: 4px;
+            background: #111827;
+            border: 1px solid var(--panel-border);
+            cursor: pointer;
+        }
+
+        .tier-pill input {
+            accent-color: var(--accent-emerald);
+        }
+
+        .alert-banner {
+            padding: 0.75rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: none;
+        }
+
+        .alert-banner.error {
+            display: block;
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid var(--accent-crimson);
+            color: #fca5a5;
+        }
+
+        .alert-banner.success {
+            display: block;
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid var(--accent-emerald);
+            color: #6ee7b7;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 0.6rem 1rem;
+            border-radius: 4px;
+            border: none;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        button:hover { opacity: 0.9; }
+
+        .btn-amber { background: var(--accent-amber); color: #000; }
+        .btn-secondary { background: #374151; color: var(--text-primary); }
+
+        .table-container {
+            overflow-x: auto;
+            max-height: 280px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8rem;
+            text-align: left;
+        }
+
+        th, td {
+            padding: 0.55rem 0.75rem;
+            border-bottom: 1px solid var(--panel-border);
+        }
+
+        th {
+            background: #060911;
+            color: var(--text-secondary);
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 2;
+        }
+
+        .badge {
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.72rem;
+            font-weight: 600;
+        }
+
+        .badge.info { background: rgba(6, 182, 212, 0.2); color: var(--accent-cyan); }
+        .badge.warn { background: rgba(245, 158, 11, 0.2); color: var(--accent-amber); }
+        .badge.crit { background: rgba(239, 68, 68, 0.25); color: var(--accent-crimson); }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-title">
+            <h1>Gitega Solar Micro-Grid Controller</h1>
+            <p>Republic of Burundi — Autonomous Micro-Grid Telemetry Node #BDI-0302-SOL</p>
+        </div>
+        <div class="sys-badge">
+            <span class="sys-dot"></span>
+            <span id="sys-status-text">SYSTEM ONLINE</span>
+        </div>
+    </header>
+
+    <!-- LIVE KPI TELEMETRY CARDS -->
+    <div class="kpi-grid">
+        <div class="kpi-card amber">
+            <span class="kpi-label">Solar Output & Energy</span>
+            <span id="kpi-solar-output" class="kpi-value">0.0 kW</span>
+            <span id="kpi-solar-energy" class="kpi-subtext">Cumulative: 0.0 kWh</span>
+        </div>
+        <div class="kpi-card cyan">
+            <span class="kpi-label">Active Load & Net Power</span>
+            <span id="kpi-active-load" class="kpi-value">0.0 kW</span>
+            <span id="kpi-net-power" class="kpi-subtext">Net Balance: 0.0 kW</span>
+        </div>
+        <div class="kpi-card emerald" id="kpi-soc-card">
+            <span class="kpi-label">Battery State of Charge</span>
+            <span id="kpi-soc-value" class="kpi-value">100.0%</span>
+            <div class="progress-bar-bg">
+                <div id="soc-bar-fill" class="progress-bar-fill"></div>
+            </div>
+        </div>
+        <div class="kpi-card emerald" id="kpi-relay-card">
+            <span class="kpi-label">Relay Controller State</span>
+            <span id="kpi-relay-status" class="kpi-value" style="font-size: 1.1rem; margin-top: 0.3rem;">ALL TIERS ONLINE</span>
+            <span id="kpi-relay-subtext" class="kpi-subtext">Nominal Operation</span>
+        </div>
+    </div>
+
+    <main>
+        <!-- LEFT PANEL: TELEMETRY CANVAS CHART & SIMULATION CONTROLS -->
+        <section class="panel">
+            <div class="panel-header">Real-Time Telemetry Curve Plotter (24-Hour Cycle)</div>
+            <div id="chart-container">
+                <canvas id="telemetryChart"></canvas>
+            </div>
+
+            <div class="controls-grid">
+                <div class="control-group">
+                    <label for="time-scrubber">
+                        <span>Simulation Time Cursor</span>
+                        <strong id="time-val">12:00 UTC</strong>
+                    </label>
+                    <input type="range" id="time-scrubber" min="0" max="24" step="0.1" value="12">
+                </div>
+
+                <div class="control-group">
+                    <label for="cloud-slider">
+                        <span>Cloud Cover Attenuation</span>
+                        <strong id="cloud-val">0%</strong>
+                    </label>
+                    <input type="range" id="cloud-slider" min="0" max="0.85" step="0.01" value="0">
+                </div>
+
+                <div class="control-group full-width">
+                    <label>Manual Relay Overrides (Physical Circuit Locks)</label>
+                    <div class="tier-toggles">
+                        <label class="tier-pill">
+                            <input type="checkbox" id="toggle-tier1" checked disabled>
+                            <span>Tier-1: Hospital ICU (12 kW)</span>
+                        </label>
+                        <label class="tier-pill">
+                            <input type="checkbox" id="toggle-tier2" checked>
+                            <span>Tier-2: School Labs (15 kW)</span>
+                        </label>
+                        <label class="tier-pill">
+                            <input type="checkbox" id="toggle-tier3" checked>
+                            <span>Tier-3: Water Pump (18 kW)</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="btn-group">
+                <button type="button" id="btn-toggle-sim" class="btn-amber">Pause Auto-Time Simulation</button>
+                <button type="button" id="btn-reset-sim" class="btn-secondary">Reset Battery (100% SoC)</button>
+            </div>
+        </section>
+
+        <!-- RIGHT PANEL: SENSOR INJECTION & EVENT LOGGER -->
+        <section class="panel">
+            <div class="panel-header">Grid Event & Telemetry Log Engine</div>
+
+            <div id="alert-banner" class="alert-banner"></div>
+
+            <form id="form-operator-log" class="controls-grid">
+                <div class="control-group full-width">
+                    <label for="operator-note">Manual Operator Grid Note</label>
+                    <input type="text" id="operator-note" placeholder="e.g. Inspected Inverter Substation B" required>
+                </div>
+                <div class="control-group full-width btn-group">
+                    <button type="submit" class="btn-amber">Commit Operator Log Entry</button>
+                </div>
+            </form>
+
+            <hr style="border-color: var(--panel-border);">
+
+            <!-- PURPLE-TEAM TEST BENCH (SENSOR SPOOF TESTING) -->
+            <form id="form-spoof-test" class="controls-grid">
+                <div class="control-group full-width">
+                    <label style="color: var(--accent-crimson);">Purple-Team Sensor Spoof Test Bench</label>
+                </div>
+                <div class="control-group">
+                    <label for="spoof-soc">Test SoC (%)</label>
+                    <input type="number" id="spoof-soc" placeholder="e.g. 150 or -20">
+                </div>
+                <div class="control-group">
+                    <label for="spoof-cloud">Test Cloud (%)</label>
+                    <input type="number" id="spoof-cloud" placeholder="e.g. 120 or -50">
+                </div>
+                <div class="control-group full-width btn-group">
+                    <button type="submit" class="btn-secondary" style="border: 1px solid var(--accent-crimson); color: var(--accent-crimson);">Inject Test Packet</button>
+                </div>
+            </form>
+
+            <div class="btn-group">
+                <button type="button" id="btn-export-json" class="btn-secondary" style="width: 100%;">Export Signed Grid Telemetry (JSON)</button>
+            </div>
+
+            <div class="panel-header" style="margin-top: 0.5rem;">Persisted Micro-Grid Event Ledger</div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Type</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-events-body"></tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        /**
+         * 1. PHYSICS & MATHEMATICAL ENGINE
+         */
+        const P_PEAK = 42.0;               // kW Peak Generation
+        const A_COEFF = 42.0 / 36.0;       // 7/6 ≈ 1.1667 (Derived from P_solar(6) = 0)
+        const BATTERY_CAPACITY_KWH = 120.0; // 120 kWh LiFePO4 Array
+
+        const LOAD_TIER_1 = 12.0; // Hospital ICU (kW)
+        const LOAD_TIER_2 = 15.0; // School Labs (kW)
+        const LOAD_TIER_3 = 18.0; // Water Pump (kW)
+
+        let currentSimTime = 12.0; // 12:00 Noon Initial
+        let cloudCover = 0.0;
+        let batterySoC = 100.0;
+        let isSimRunning = true;
+        let simInterval = null;
+
+        // Relay States
+        let tier1Active = true;
+        let tier2Active = true;
+        let tier3Active = true;
+
+        let lastRelayStateStr = "";
+
+        // Calculated Solar Generation P_solar(t)
+        function calculateSolarOutput(t, cloud) {
+            if (t < 6.0 || t > 18.0) return 0.0;
+            const idealP = -A_COEFF * Math.pow(t - 12.0, 2) + P_PEAK;
+            const actualP = Math.max(0.0, idealP * (1.0 - cloud));
+            return actualP;
+        }
+
+        // Definite Integration for Cumulative Energy E(T) from t=6 to T
+        function calculateCumulativeEnergy(T, cloud) {
+            if (T <= 6.0) return 0.0;
+            const upperT = Math.min(T, 18.0);
+            
+            // Analytical Integral of (-a(t-12)^2 + P_peak) dt
+            // = -a * ( (upperT-12)^3 / 3 - (-6)^3 / 3 ) + P_peak * (upperT - 6)
+            const integralVal = -A_COEFF * (Math.pow(upperT - 12.0, 3) / 3.0 - Math.pow(-6.0, 3) / 3.0) + P_PEAK * (upperT - 6.0);
+            return Math.max(0.0, integralVal * (1.0 - cloud));
+        }
+
+        /**
+         * 2. PURPLE-TEAM SECURITY & BOUNDS GUARD
+         */
+        function validateSensorPacket(soc, cloud) {
+            if (typeof soc !== 'number' || isNaN(soc) || soc < 0.0 || soc > 100.0) {
+                return { valid: false, reason: `SENSOR SPOOF REJECTED // Battery SoC out of physical bounds (${soc}%).` };
+            }
+            if (typeof cloud !== 'number' || isNaN(cloud) || cloud < 0.0 || cloud > 1.0) {
+                return { valid: false, reason: `SENSOR SPOOF REJECTED // Cloud cover out of physical bounds (${cloud * 100}%).` };
+            }
+            return { valid: true };
+        }
+
+        function escapeHTML(str) {
+            if (!str) return '';
+            return String(str).replace(/[&<>"']/g, (tag) => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            }[tag] || tag));
+        }
+
+        async function generateSHA256(dataString) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(dataString);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        /**
+         * 3. INDEXEDDB EVENT ENGINE
+         */
+        const DB_NAME = 'GitegaMicrogridDB';
+        const DB_VERSION = 1;
+        let db = null;
+
+        function initDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+                request.onupgradeneeded = (e) => {
+                    const dbInstance = e.target.result;
+                    if (!dbInstance.objectStoreNames.contains('grid_events')) {
+                        dbInstance.createObjectStore('grid_events', { keyPath: 'id', autoIncrement: true });
+                    }
+                };
+                request.onsuccess = (e) => {
+                    db = e.target.result;
+                    resolve(db);
+                };
+                request.onerror = (e) => reject(e.target.error);
+            });
+        }
+
+        async function logGridEvent(type, details) {
+            if (!db) return;
+            const entry = {
+                timestamp: new Date().toISOString(),
+                simTimeHours: currentSimTime.toFixed(1),
+                type: type,
+                details: details
+            };
+            const tx = db.transaction('grid_events', 'readwrite');
+            await tx.objectStore('grid_events').add(entry);
+            renderEventTable();
+        }
+
+        async function getAllGridEvents() {
+            if (!db) return [];
+            return new Promise((resolve) => {
+                const tx = db.transaction('grid_events', 'readonly');
+                const req = tx.objectStore('grid_events').getAll();
+                req.onsuccess = () => resolve(req.result);
+            });
+        }
+
+        async function renderEventTable() {
+            const events = await getAllGridEvents();
+            const tbody = document.getElementById('table-events-body');
+            tbody.innerHTML = '';
+            
+            [...events].reverse().slice(0, 30).forEach(ev => {
+                const tr = document.createElement('tr');
+                let badgeClass = 'info';
+                if (ev.type.includes('SHED') || ev.type.includes('ALERT')) badgeClass = 'warn';
+                if (ev.type.includes('CRITICAL') || ev.type.includes('SPOOF')) badgeClass = 'crit';
+
+                tr.innerHTML = `
+                    <td>${ev.simTimeHours}:00</td>
+                    <td><span class="badge ${badgeClass}">${escapeHTML(ev.type)}</span></td>
+                    <td>${escapeHTML(ev.details)}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        /**
+         * 4. CANVAS RENDER ENGINE
+         */
+        const canvas = document.getElementById('telemetryChart');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            const container = document.getElementById('chart-container');
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+        }
+
+        function drawChart() {
+            const width = canvas.width;
+            const height = canvas.height;
+            const padding = 40;
+
+            ctx.clearRect(0, 0, width, height);
+
+            // Background
+            ctx.fillStyle = '#030712';
+            ctx.fillRect(0, 0, width, height);
+
+            // Axes & Grid
+            ctx.strokeStyle = '#1f2937';
+            ctx.lineWidth = 1;
+
+            // Horizontal Grid Lines (0 to 50 kW)
+            for (let kw = 0; kw <= 50; kw += 10) {
+                const y = height - padding - (kw / 50.0) * (height - 2 * padding);
+                ctx.beginPath(); ctx.moveTo(padding, y); ctx.lineTo(width - padding, y); ctx.stroke();
+                ctx.fillStyle = '#6b7280';
+                ctx.font = '10px Segoe UI, sans-serif';
+                ctx.fillText(`${kw} kW`, 8, y + 3);
+            }
+
+            // Vertical Grid Lines (Hours 00:00 to 24:00)
+            for (let h = 0; h <= 24; h += 3) {
+                const x = padding + (h / 24.0) * (width - 2 * padding);
+                ctx.beginPath(); ctx.moveTo(x, padding); ctx.lineTo(x, height - padding); ctx.stroke();
+                ctx.fillStyle = '#6b7280';
+                ctx.fillText(`${h.toString().padStart(2, '0')}:00`, x - 12, height - 15);
+            }
+
+            // 1. Draw Solar Generation Parabola P_solar(t)
+            ctx.beginPath();
+            ctx.strokeStyle = '#f59e0b';
+            ctx.lineWidth = 3;
+            let firstPoint = true;
+
+            for (let t = 0; t <= 24; t += 0.1) {
+                const pVal = calculateSolarOutput(t, cloudCover);
+                const x = padding + (t / 24.0) * (width - 2 * padding);
+                const y = height - padding - (pVal / 50.0) * (height - 2 * padding);
+
+                if (firstPoint) { ctx.moveTo(x, y); firstPoint = false; }
+                else { ctx.lineTo(x, y); }
+            }
+            ctx.stroke();
+
+            // Fill Area Under Solar Parabola
+            ctx.lineTo(padding + (18.0 / 24.0) * (width - 2 * padding), height - padding);
+            ctx.lineTo(padding + (6.0 / 24.0) * (width - 2 * padding), height - padding);
+            ctx.fillStyle = 'rgba(245, 158, 11, 0.12)';
+            ctx.fill();
+
+            // 2. Draw Active Community Load Step Line P_load(t)
+            const activeLoadKW = (tier1Active ? LOAD_TIER_1 : 0) + (tier2Active ? LOAD_TIER_2 : 0) + (tier3Active ? LOAD_TIER_3 : 0);
+            const loadY = height - padding - (activeLoadKW / 50.0) * (height - 2 * padding);
+
+            ctx.beginPath();
+            ctx.strokeStyle = '#06b6d4';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([4, 4]);
+            ctx.moveTo(padding, loadY);
+            ctx.lineTo(width - padding, loadY);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // 3. Draw Vertical Live Time Cursor
+            const cursorX = padding + (currentSimTime / 24.0) * (width - 2 * padding);
+            ctx.beginPath();
+            ctx.strokeStyle = '#ef4444';
+            ctx.lineWidth = 2;
+            ctx.moveTo(cursorX, padding);
+            ctx.lineTo(cursorX, height - padding);
+            ctx.stroke();
+
+            // Cursor Head
+            ctx.beginPath();
+            ctx.arc(cursorX, padding, 4, 0, Math.PI * 2);
+            ctx.fillStyle = '#ef4444';
+            ctx.fill();
+        }
+
+        /**
+         * 5. AUTONOMOUS LOAD-SHEDDING STATE MACHINE & TELEMETRY UPDATES
+         */
+        function updateSimulationStep(dtHours = 0.05) {
+            // Update time
+            if (isSimRunning) {
+                currentSimTime += dtHours;
+                if (currentSimTime > 24.0) currentSimTime = 0.0;
+                document.getElementById('time-scrubber').value = currentSimTime;
+            }
+
+            const formatHours = Math.floor(currentSimTime).toString().padStart(2, '0');
+            const formatMins = Math.floor((currentSimTime % 1) * 60).toString().padStart(2, '0');
+            document.getElementById('time-val').innerText = `${formatHours}:${formatMins} UTC`;
+
+            // Calculate Solar & Load
+            const solarKW = calculateSolarOutput(currentSimTime, cloudCover);
+            const activeLoadKW = (tier1Active ? LOAD_TIER_1 : 0) + (tier2Active ? LOAD_TIER_2 : 0) + (tier3Active ? LOAD_TIER_3 : 0);
+            const netPowerKW = solarKW - activeLoadKW;
+
+            // Update Battery SoC
+            const deltaSoC = (netPowerKW * dtHours / BATTERY_CAPACITY_KWH) * 100.0;
+            batterySoC = Math.min(100.0, Math.max(0.0, batterySoC + deltaSoC));
+
+            // AUTONOMOUS LOAD-SHEDDING RELAY LOGIC (Hysteresis state machine)
+            let currentStateStr = "";
+            if (batterySoC < 18.0) {
+                // Critical Emergency: Shed Tier-3 and Tier-2
+                tier3Active = false;
+                tier2Active = false;
+                tier1Active = true; // Protect Hospital ICU
+                document.getElementById('toggle-tier3').checked = false;
+                document.getElementById('toggle-tier2').checked = false;
+                currentStateStr = "CRITICAL EMERGENCY // ICU ONLY";
+            } else if (batterySoC < 30.0) {
+                // Warning: Shed Tier-3 (Water Pump)
+                tier3Active = false;
+                document.getElementById('toggle-tier3').checked = false;
+                if (batterySoC >= 22.0) {
+                    tier2Active = document.getElementById('toggle-tier2').checked;
+                }
+                currentStateStr = "TIER-3 SHED // WATER PUMP OFF";
+            } else if (batterySoC >= 35.0) {
+                // Restore All Tiers if unchecked manually
+                tier3Active = document.getElementById('toggle-tier3').checked;
+                tier2Active = document.getElementById('toggle-tier2').checked;
+                currentStateStr = "ALL TIERS ONLINE";
+            }
+
+            // Log Relay State Transitions
+            if (currentStateStr !== lastRelayStateStr && lastRelayStateStr !== "") {
+                logGridEvent("RELAY_STATE_CHANGE", `Battery SoC at ${batterySoC.toFixed(1)}%: Transitioned to [${currentStateStr}]`);
+            }
+            lastRelayStateStr = currentStateStr;
+
+            // UPDATE KPI TELEMETRY DOM
+            const cumulativeKWh = calculateCumulativeEnergy(currentSimTime, cloudCover);
+            document.getElementById('kpi-solar-output').innerText = `${solarKW.toFixed(1)} kW`;
+            document.getElementById('kpi-solar-energy').innerText = `Cumulative: ${cumulativeKWh.toFixed(1)} kWh`;
+
+            document.getElementById('kpi-active-load').innerText = `${activeLoadKW.toFixed(1)} kW`;
+            document.getElementById('kpi-net-power').innerText = `Net Balance: ${netPowerKW >= 0 ? '+' : ''}${netPowerKW.toFixed(1)} kW`;
+
+            document.getElementById('kpi-soc-value').innerText = `${batterySoC.toFixed(1)}%`;
+            const socBar = document.getElementById('soc-bar-fill');
+            socBar.style.width = `${batterySoC}%`;
+
+            const socCard = document.getElementById('kpi-soc-card');
+            const relayCard = document.getElementById('kpi-relay-card');
+            const relayStatus = document.getElementById('kpi-relay-status');
+
+            if (batterySoC < 18.0) {
+                socBar.style.backgroundColor = 'var(--accent-crimson)';
+                socCard.className = 'kpi-card crimson';
+                relayCard.className = 'kpi-card crimson';
+                relayStatus.innerText = "CRITICAL // ICU ONLY";
+            } else if (batterySoC < 30.0) {
+                socBar.style.backgroundColor = 'var(--accent-amber)';
+                socCard.className = 'kpi-card amber';
+                relayCard.className = 'kpi-card amber';
+                relayStatus.innerText = "TIER-3 SHED // PUMP OFF";
+            } else {
+                socBar.style.backgroundColor = 'var(--accent-emerald)';
+                socCard.className = 'kpi-card emerald';
+                relayCard.className = 'kpi-card emerald';
+                relayStatus.innerText = "ALL TIERS ONLINE";
+            }
+
+            drawChart();
+        }
+
+        /**
+         * 6. INTERACTION & EVENT LISTENERS
+         */
+        const alertBanner = document.getElementById('alert-banner');
+
+        function showAlert(msg, isError = true) {
+            alertBanner.className = `alert-banner ${isError ? 'error' : 'success'}`;
+            alertBanner.innerText = msg;
+        }
+
+        function clearAlert() {
+            alertBanner.className = 'alert-banner';
+            alertBanner.innerText = '';
+        }
+
+        // Time Scrubber
+        document.getElementById('time-scrubber').addEventListener('input', (e) => {
+            currentSimTime = parseFloat(e.target.value);
+            updateSimulationStep(0);
+        });
+
+        // Cloud Cover Slider
+        document.getElementById('cloud-slider').addEventListener('input', (e) => {
+            cloudCover = parseFloat(e.target.value);
+            document.getElementById('cloud-val').innerText = `${Math.round(cloudCover * 100)}%`;
+            updateSimulationStep(0);
+        });
+
+        // Manual Tier Overrides
+        document.getElementById('toggle-tier2').addEventListener('change', (e) => {
+            tier2Active = e.target.checked;
+            updateSimulationStep(0);
+        });
+        document.getElementById('toggle-tier3').addEventListener('change', (e) => {
+            tier3Active = e.target.checked;
+            updateSimulationStep(0);
+        });
+
+        // Toggle Simulation Play/Pause
+        document.getElementById('btn-toggle-sim').addEventListener('click', () => {
+            isSimRunning = !isSimRunning;
+            document.getElementById('btn-toggle-sim').innerText = isSimRunning ? "Pause Auto-Time Simulation" : "Resume Auto-Time Simulation";
+        });
+
+        // Reset Battery
+        document.getElementById('btn-reset-sim').addEventListener('click', () => {
+            batterySoC = 100.0;
+            showAlert("Battery Bank reset to 100% SoC.", false);
+            updateSimulationStep(0);
+        });
+
+        // Commit Operator Grid Note
+        document.getElementById('form-operator-log').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            clearAlert();
+            const noteInput = document.getElementById('operator-note');
+            const noteVal = noteInput.value.trim();
+
+            if (!noteVal) return;
+
+            await logGridEvent("OPERATOR_INSPECTION", noteVal);
+            showAlert("Operator log committed to IndexedDB.", false);
+            noteInput.value = '';
+        });
+
+        // Purple-Team Sensor Spoof Test Bench
+        document.getElementById('form-spoof-test').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            clearAlert();
+
+            const rawSoc = parseFloat(document.getElementById('spoof-soc').value);
+            const rawCloud = parseFloat(document.getElementById('spoof-cloud').value) / 100.0;
+
+            const validation = validateSensorPacket(rawSoc, rawCloud);
+            if (!validation.valid) {
+                showAlert(validation.reason, true);
+                await logGridEvent("SECURITY_ALERT", validation.reason);
+                return;
+            }
+
+            showAlert("Sensor packet passed security bounds check.", false);
+        });
+
+        // Export Signed Telemetry Manifest (JSON)
+        document.getElementById('btn-export-json').addEventListener('click', async () => {
+            const events = await getAllGridEvents();
+            const cumulativeKWh = calculateCumulativeEnergy(currentSimTime, cloudCover);
+
+            const payloadData = {
+                telemetry: {
+                    simTimeHours: currentSimTime,
+                    solarOutputKW: calculateSolarOutput(currentSimTime, cloudCover),
+                    cumulativeEnergyKWh: cumulativeKWh,
+                    batterySoC: batterySoC,
+                    cloudCover: cloudCover
+                },
+                grid_events: events
+            };
+
+            const payloadString = JSON.stringify(payloadData);
+            const hashHex = await generateSHA256(payloadString);
+
+            const manifest = {
+                metadata: {
+                    platform: "Gitega Solar Micro-Grid Controller",
+                    exported_at: new Date().toISOString(),
+                    node_id: "BDI-0302-SOL"
+                },
+                integrity_sha256: hashHex,
+                data: payloadData
+            };
+
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(manifest, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `gitega_grid_telemetry_${Date.now()}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        });
+
+        /**
+         * INITIALIZATION & SIMULATION LOOP
+         */
+        window.addEventListener('DOMContentLoaded', async () => {
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            await initDB();
+            await renderEventTable();
+
+            // Initial Event Log
+            logGridEvent("SYSTEM_INIT", "Gitega Micro-Grid Controller Initialized. Peak Solar: 42kW, Battery Bank: 120kWh.");
+
+            // Start 100ms Simulation Loop
+            simInterval = setInterval(() => {
+                updateSimulationStep(0.02); // Advance 0.02 hours per tick
+            }, 100);
+        });
+    </script>
+</body>
+</html>
